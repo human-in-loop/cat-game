@@ -1,131 +1,171 @@
 <!doctype html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none"/>
-<title>Cat Hunt - Rattle Edition</title>
-<style>
-  body { margin: 0; background: #000b1a; overflow: hidden; font-family: sans-serif; touch-action: none; }
-  .bubble-yellow, .bubble-blue { position: absolute; width: 85px; height: 85px; border-radius: 50%; z-index: 5; }
-  .bubble-yellow { border: 4px solid #ffff00; background: rgba(255, 255, 0, 0.2); }
-  .bubble-blue { border: 4px solid #00ffff; background: rgba(0, 255, 255, 0.2); }
-  .snake-body { position: absolute; width: 14px; height: 14px; border-radius: 50%; z-index: 4; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
-  #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; background: #000; z-index: 100; cursor: pointer; }
-  #muteBtn { position: fixed; bottom: 30px; left: 30px; padding: 12px 25px; background: #111; color: #ffff00; border: 2px solid #ffff00; border-radius: 30px; z-index: 110; font-size: 16px; cursor: pointer; }
-</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none" />
+    <title>Cat Hunt - Pro Icon Edition</title>
+    <style>
+        body { margin: 0; background: #000b1a; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        .bubble-yellow { position: absolute; width: 85px; height: 85px; border-radius: 50%; border: 4px solid #ffff00; background: rgba(255, 255, 0, 0.2); z-index: 5; }
+        .bubble-blue { position: absolute; width: 85px; height: 85px; border-radius: 50%; border: 4px solid #00ffff; background: rgba(0, 255, 255, 0.2); z-index: 5; }
+        .snake-body { position: absolute; width: 14px; height: 14px; border-radius: 50%; z-index: 4; box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
+        
+        #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; background: #000; z-index: 100; cursor: pointer; }
+        
+        /* Simple Icon Button */
+        #muteBtn {
+            position: fixed; bottom: 30px; left: 30px;
+            width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #ffff00;
+            border-radius: 50%;
+            z-index: 110;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+        }
+        #muteBtn svg { width: 24px; height: 24px; fill: #ffff00; }
+    </style>
 </head>
 <body>
-<div id="start">TAP TO START 🐾</div>
-<button id="muteBtn">MUTE ALL</button>
-<script>
-let audioCtx, masterGain;
-let isMuted = false;
+    <div id="start">TAP TO START 🐾</div>
+    
+    <button id="muteBtn">
+        <svg id="speakerIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+    </button>
 
-// Initialize audio context on first tap
-function initAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    masterGain = audioCtx.createGain();
-    masterGain.connect(audioCtx.destination);
-  }
-}
+    <script>
+        let audioCtx, masterGain;
+        let isMuted = false;
 
-// Short Pspsps / rattle sounds
-function playPspsps() {
-  if (!audioCtx || isMuted) return;
-  const now = audioCtx.currentTime;
-  for (let i = 0; i < 4; i++) {
-    const t = now + i * 0.08;
-    const noise = audioCtx.createBufferSource();
-    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate*0.04, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let j=0;j<data.length;j++) data[j] = Math.random()*2-1;
-    noise.buffer = buffer;
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = "highpass"; filter.frequency.value = 9500;
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.04);
-    noise.connect(filter); filter.connect(g); g.connect(masterGain); noise.start(t);
-  }
-}
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.connect(audioCtx.destination);
+            if (audioCtx.state === "suspended") audioCtx.resume();
+        }
 
-function playRattle() {
-  if (!audioCtx || isMuted) return;
-  const now = audioCtx.currentTime;
-  for (let i=0;i<15;i++){
-    const t=now+i*0.04;
-    const osc=audioCtx.createOscillator();
-    const g=audioCtx.createGain();
-    osc.type="square";
-    osc.frequency.setValueAtTime(6000+Math.random()*2000, t);
-    g.gain.setValueAtTime(0.03,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.03);
-    osc.connect(g); g.connect(masterGain); osc.start(t); osc.stop(t+0.03);
-  }
-}
+        function playPspsps() {
+            if (!audioCtx || isMuted) return;
+            const now = audioCtx.currentTime;
+            for (let i = 0; i < 4; i++) {
+                const t = now + (i * 0.08);
+                const noise = audioCtx.createBufferSource();
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.04, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let j = 0; j < data.length; j++) data[j] = Math.random() * 2 - 1;
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = "highpass"; filter.frequency.value = 9500;
+                const g = audioCtx.createGain();
+                g.gain.setValueAtTime(0.15, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+                noise.connect(filter); filter.connect(g); g.connect(masterGain);
+                noise.start(t);
+            }
+        }
 
-function playPop() {
-  if (!audioCtx || isMuted) return;
-  const osc=audioCtx.createOscillator();
-  const g=audioCtx.createGain();
-  osc.frequency.setValueAtTime(450,audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(8000,audioCtx.currentTime+0.1);
-  g.gain.setValueAtTime(0.1,audioCtx.currentTime);
-  osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime+0.1);
-}
+        function playRattle() {
+            if (!audioCtx || isMuted) return;
+            const now = audioCtx.currentTime;
+            for (let i = 0; i < 15; i++) {
+                const t = now + (i * 0.04);
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(6000 + (Math.random() * 2000), t);
+                g.gain.setValueAtTime(0.03, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+                osc.connect(g); g.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.03);
+            }
+        }
 
-// Spawn snake
-function spawnSnake() {
-  const segments=[]; const num=45;
-  const colors=["#ffff00","#00ffff","#39ff14"];
-  const snakeColor=colors[Math.floor(Math.random()*colors.length)];
-  let x=-300, y=Math.random()*(window.innerHeight-300)+150;
-  let angle=0, speed=8+Math.random()*4;
+        function playPop() {
+            if (!audioCtx || isMuted) return;
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(8000, audioCtx.currentTime + 0.1);
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.connect(g); g.connect(masterGain);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        }
 
-  for(let i=0;i<num;i++){
-    const s=document.createElement("div"); s.className="snake-body";
-    s.style.background=snakeColor; document.body.appendChild(s);
-    segments.push({el:s,x:x,y:y});
-  }
+        function spawnSnake() {
+            const segments = [];
+            const num = 45; 
+            const colors = ["#ffff00", "#00ffff", "#39ff14"]; 
+            const snakeColor = colors[Math.floor(Math.random() * colors.length)];
+            let x = -300, y = Math.random() * (window.innerHeight - 300) + 150;
+            let angle = 0, speed = 8 + Math.random() * 4;
 
-  playPspsps(); if(Math.random()>0.5)setTimeout(playRattle,400);
+            for (let i = 0; i < num; i++) {
+                const s = document.createElement("div");
+                s.className = "snake-body";
+                s.style.background = snakeColor;
+                document.body.appendChild(s);
+                segments.push({el: s, x: x, y: y});
+            }
 
-  const move=setInterval(()=>{
-    angle+=0.25; x+=speed;
-    if(Math.random()>0.98)playRattle();
-    if(x>window.innerWidth+1000){segments.forEach(s=>s.el.remove()); clearInterval(move);}
-    segments[0].x=x; segments[0].y=y+Math.sin(angle)*90;
-    for(let i=num-1;i>0;i--){segments[i].x=segments[i-1].x-10; segments[i].y=segments[i-1].y;}
-    segments.forEach(s=>{s.el.style.left=s.x+"px"; s.el.style.top=s.y+"px";});
-  },25);
+            playPspsps();
+            if(Math.random() > 0.5) setTimeout(playRattle, 400);
 
-  segments.forEach(s=>s.el.onpointerdown=e=>{e.preventDefault(); playPop(); segments.forEach(seg=>seg.el.remove()); clearInterval(move);});
-}
+            const move = setInterval(() => {
+                angle += 0.25; x += speed;
+                if(Math.random() > 0.98) playRattle();
+                if (x > window.innerWidth + 1000) {
+                    segments.forEach(s => s.el.remove());
+                    clearInterval(move);
+                }
+                segments[0].x = x;
+                segments[0].y = y + Math.sin(angle) * 90;
+                for (let i = num - 1; i > 0; i--) {
+                    segments[i].x = segments[i-1].x - 10;
+                    segments[i].y = segments[i-1].y;
+                }
+                segments.forEach(s => {
+                    s.el.style.left = s.x + "px";
+                    s.el.style.top = s.y + "px";
+                });
+            }, 25);
 
-// Spawn bubble
-function spawnBubble(){
-  const b=document.createElement("div");
-  b.className=Math.random()>0.5?"bubble-yellow":"bubble-blue";
-  b.style.left=Math.random()*(window.innerWidth-100)+"px";
-  b.style.top=Math.random()*(window.innerHeight-100)+"px";
-  b.onpointerdown=e=>{e.preventDefault(); playPop(); b.remove();};
-  document.body.appendChild(b);
-  setTimeout(()=>{if(b.parentNode)b.remove();},4000);
-}
+            segments.forEach(s => s.el.onpointerdown = (e) => {
+                e.preventDefault(); playPop();
+                segments.forEach(seg => seg.el.remove());
+                clearInterval(move);
+            });
+        }
 
-// Start game: ensure audio unlock on iPhone/iPad
-document.getElementById("start").onclick=()=>{
-  initAudio();
-  playPspsps(); // play immediately to unlock audio on mobile
-  document.getElementById("start").style.display="none";
-  setInterval(spawnBubble,2200);
-  setInterval(spawnSnake,6000);
-  setTimeout(()=>setInterval(spawnSnake,8000),3000);
-};
+        function spawnBubble() {
+            const b = document.createElement("div");
+            b.className = Math.random() > 0.5 ? "bubble-yellow" : "bubble-blue";
+            b.style.left = Math.random() * (window.innerWidth - 100) + "px";
+            b.style.top = Math.random() * (window.innerHeight - 100) + "px";
+            b.onpointerdown = (e) => { e.preventDefault(); playPop(); b.remove(); };
+            document.body.appendChild(b);
+            setTimeout(() => { if(b.parentNode) b.remove(); }, 4000);
+        }
 
-document.getElementById("muteBtn").onclick=(e)=>{
-  isMuted=!isMuted;
-  masterGain.gain.setTargetAtTime(isMuted?0:1,audioCtx.currentTime,0.05);
-  document.getElementById("muteBtn").textContent=isMuted?"UNMUTE":"MUTE ALL";
-};
-</script>
+        document.getElementById("start").onclick = () => {
+            initAudio();
+            document.getElementById("start").style.display = "none";
+            setInterval(spawnBubble, 2200);
+            setInterval(spawnSnake, 6000);
+            setTimeout(() => setInterval(spawnSnake, 8500), 3500);
+        };
+
+        document.getElementById("muteBtn").onclick = (e) => {
+            e.stopPropagation();
+            isMuted = !isMuted;
+            masterGain.gain.setTargetAtTime(isMuted ? 0 : 1, audioCtx.currentTime, 0.05);
+            
+            // Toggle Icon
+            document.getElementById("speakerIcon").innerHTML = isMuted ? 
+                '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>' : 
+                '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+        };
+    </script>
 </body>
 </html>
