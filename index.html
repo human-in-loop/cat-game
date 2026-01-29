@@ -9,7 +9,7 @@
         .bubble-blue { position: absolute; width: 85px; height: 85px; border-radius: 50%; border: 4px solid #00ffff; background: rgba(0, 255, 255, 0.2); z-index: 5; }
         .snake-body { position: absolute; width: 14px; height: 14px; border-radius: 50%; z-index: 4; box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
         
-        #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; background: #000; z-index: 100; cursor: pointer; text-align: center; padding: 20px; }
+        #start { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; background: #000; z-index: 100; cursor: pointer; text-align: center; padding: 20px; font-weight: bold; }
         
         #muteBtn {
             position: fixed; bottom: 30px; left: 30px;
@@ -21,13 +21,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 15px rgba(255, 255, 0, 0.3); /* Glow effect */
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
+            cursor: pointer;
         }
-        #muteBtn svg { width: 26px; height: 26px; fill: #ffff00; }
+        #muteBtn svg { width: 26px; height: 26px; fill: #ffff00; pointer-events: none; }
     </style>
 </head>
 <body>
-    <div id="start">TAP TO START BIRD SOUNDS 🐾<br><br><small style="font-size:14px;color:#888;">(Ensure Silent Mode is OFF)</small></div>
+    <div id="start">TAP TO START 🐾</div>
     
     <button id="muteBtn">
         <svg id="speakerIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
@@ -37,25 +38,15 @@
         let audioCtx, masterGain;
         let isMuted = false;
 
-        // MOBILE FIX: Use 'touchstart' and a silent buffer to wake the hardware
         async function initAudio() {
-            if (audioCtx) return;
-            
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            masterGain = audioCtx.createGain();
-            masterGain.connect(audioCtx.destination);
-            
-            // Resume if suspended (common in mobile)
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.connect(audioCtx.destination);
+            }
             if (audioCtx.state === "suspended") {
                 await audioCtx.resume();
             }
-
-            // Create a tiny silent burst to "prime" the speaker
-            const buffer = audioCtx.createBuffer(1, 1, 22050);
-            const source = audioCtx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioCtx.destination);
-            source.start(0);
         }
 
         function playPspsps() {
@@ -143,11 +134,11 @@
                 });
             }, 25);
 
-            segments.forEach(s => s.el.addEventListener('touchstart', (e) => {
+            segments.forEach(s => s.el.onpointerdown = (e) => {
                 e.preventDefault(); playPop();
                 segments.forEach(seg => seg.el.remove());
                 clearInterval(move);
-            }));
+            });
         }
 
         function spawnBubble() {
@@ -155,23 +146,24 @@
             b.className = Math.random() > 0.5 ? "bubble-yellow" : "bubble-blue";
             b.style.left = Math.random() * (window.innerWidth - 100) + "px";
             b.style.top = Math.random() * (window.innerHeight - 100) + "px";
-            b.addEventListener('touchstart', (e) => { e.preventDefault(); playPop(); b.remove(); });
+            b.onpointerdown = (e) => { e.preventDefault(); playPop(); b.remove(); };
             document.body.appendChild(b);
             setTimeout(() => { if(b.parentNode) b.remove(); }, 4000);
         }
 
-        // START TRIGGER
-        document.getElementById("start").addEventListener("touchstart", (e) => {
+        // UNIVERSAL START HANDLER
+        const startHandler = async (e) => {
             e.preventDefault();
-            initAudio().then(() => {
-                document.getElementById("start").style.display = "none";
-                setInterval(spawnBubble, 2200);
-                setInterval(spawnSnake, 6000);
-                setTimeout(() => setInterval(spawnSnake, 8500), 3500);
-            });
-        }, {once: true});
+            await initAudio();
+            document.getElementById("start").style.display = "none";
+            setInterval(spawnBubble, 2200);
+            setInterval(spawnSnake, 6000);
+            setTimeout(() => setInterval(spawnSnake, 8500), 3500);
+        };
 
-        document.getElementById("muteBtn").addEventListener('touchstart', (e) => {
+        document.getElementById("start").addEventListener("pointerdown", startHandler, {once: true});
+
+        document.getElementById("muteBtn").onpointerdown = (e) => {
             e.preventDefault();
             e.stopPropagation();
             isMuted = !isMuted;
@@ -181,7 +173,7 @@
             document.getElementById("speakerIcon").innerHTML = isMuted ? 
                 '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>' : 
                 '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
-        });
+        };
     </script>
 </body>
 </html>
